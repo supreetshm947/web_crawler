@@ -1,0 +1,5 @@
+some_file.txt
+.venv
+.idea
+__pycache__
+.env

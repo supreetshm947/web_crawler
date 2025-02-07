@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "web-crawler"
+version = "0.1.0"
+description = ""
+authors = ["supreet <supreet.shm523@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+python-dotenv = "^1.0.1"
+google-generativeai = "^0.8.4"
+langchain-core = "^0.3.33"
+langchain-community = "^0.3.16"
+langchain-gemini = "^0.1.1"
+langchain-google-genai = "^2.0.9"
+pipecat-ai = {extras = ["google", "openai"], version = "^0.0.55"}
+langchain-cohere = "^0.4.2"
+faiss-cpu = "^1.10.0"
+daily = "^0.2.1"
+daily-python = "^0.14.2"
+fuzzywuzzy = "^0.18.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
