@@ -19,6 +19,8 @@ faiss-cpu = "^1.10.0"
 daily = "^0.2.1"
 daily-python = "^0.14.2"
 fuzzywuzzy = "^0.18.0"
+bs4 = "^0.0.2"
+requests = "^2.32.3"
 
 
 [build-system]

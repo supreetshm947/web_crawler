@@ -7,10 +7,8 @@ from langchain_core.runnables import Runnable
 
 
 from pipecat.frames.frames import (
-    Frame,
     LLMFullResponseEndFrame,
     LLMFullResponseStartFrame,
-    LLMMessagesFrame,
     TextFrame,
 )
 
@@ -18,14 +16,16 @@ from pipecat.transports.services.daily import DailyTransport
 import re
 from fuzzywuzzy import fuzz
 from loguru import logger
+from embeddings_utils import scrape_and_store
 
 
 class LangchainRAGProcessor(LangchainProcessor):
-    def __init__(self, transport: DailyTransport, chain: Runnable, transcript_key: str = "input"):
+    def __init__(self, transport: DailyTransport, chain: Runnable, vector_store, transcript_key: str = "input"):
         super().__init__(chain, transcript_key)
         self._transport = transport
         self._chain = chain
         self._transcript_key = transcript_key
+        self.vector_store = vector_store
 
     @staticmethod
     def __get_token_value(text: Union[str, AIMessageChunk]) -> str:
@@ -51,6 +51,11 @@ class LangchainRAGProcessor(LangchainProcessor):
             "get details from",
             "retrieve information from",
             "scrape and summarize",
+            "scrape",
+            "scrape"
+            "this",
+            "read this",
+            "read",
             "what does"
         ]
 
@@ -70,7 +75,9 @@ class LangchainRAGProcessor(LangchainProcessor):
         search_result = ""
         logger.debug(f"Invoking chain with {text}")
         if url:=self.__detect_url_masking(text):
-            await self._transport.send_prebuilt_chat_message(f"Crawling {url}, it could take a while", "Chatbot")
+            await self._transport.send_prebuilt_chat_message(f"Crawling {url}, it could take a while....", "Chatbot")
+            scrape_and_store(url, self.vector_store)
+            await self._transport.send_prebuilt_chat_message(f"Loaded {url} 🔥.", "Chatbot")
             return
 
 
@@ -85,8 +92,8 @@ class LangchainRAGProcessor(LangchainProcessor):
                 await self.push_frame(TextFrame(c))
             await self._transport.send_prebuilt_chat_message(search_result, "Chatbot")
         except GeneratorExit:
-            print(f"{self} generator was closed prematurely")
+            logger.error(f"{self} generator was closed prematurely")
         except Exception as e:
-            print(f"{self} an unknown error occurred: {e}")
+            logger.error(f"{self} an unknown error occurred: {e}")
         finally:
             await self.push_frame(LLMFullResponseEndFrame())

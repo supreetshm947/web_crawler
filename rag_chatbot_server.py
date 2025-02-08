@@ -1,24 +1,26 @@
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.task import PipelineParams, PipelineTask
 from pipecat.frames.frames import LLMMessagesFrame
-from pipecat.processors.frame_processor import FrameDirection
 from pipecat.transports.services.daily import DailyParams, DailyTransport
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain.prompts import ChatPromptTemplate
 from langchain_cohere import ChatCohere
 from pipecat.pipeline.runner import PipelineRunner
-from google.ai.generativelanguage_v1beta.types.content import Content, Part
+import faiss
+from langchain_community.docstore.in_memory import InMemoryDocstore
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.runnables import RunnableWithMessageHistory
 from langchain_community.chat_message_histories import ChatMessageHistory
 from rag_processor import LangchainRAGProcessor
 from pipecat.processors.aggregators.llm_response import LLMUserResponseAggregator
 from pipecat.processors.aggregators.llm_response import LLMAssistantResponseAggregator
+from embedding_model import MyEmbeddingModel
+from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain.chains import create_retrieval_chain
+from langchain.chains.combine_documents import create_stuff_documents_chain
 from dotenv import load_dotenv
+from langchain_community.vectorstores import FAISS
 import os
 import asyncio
-
-from typing import Optional
-from pipecat.processors.metrics.frame_processor_metrics import FrameProcessorMetrics
 
 load_dotenv()
 
@@ -32,7 +34,7 @@ def get_session_history(session_id: str) -> BaseChatMessageHistory:
 async def main(room_url: str):
     transport = DailyTransport(
         room_url,
-        None,  # No token needed for public rooms
+        None,
         "Chatbot",
         DailyParams(
             api_key=os.getenv("DAILY_API_KEY"),
@@ -43,20 +45,44 @@ async def main(room_url: str):
     prompt = ChatPromptTemplate.from_messages(
         [
             ("system",
-             "Be nice and helpful. Answer very briefly"
+             "You are a helpful assistant. For specific queries by user, TRY to answer questions using the provided context. "
+             "If the question is too specific and you do not know the answer based on the given context, say:\n\n"
+             "'I don't have enough knowledge on this. Please provide a URL so I can learn."
              ),
+            ("user", "Context: {context}"),
             MessagesPlaceholder("chat_history"),
             ("human", "{input}")
         ])
 
-    llm = prompt | ChatCohere()
+    embedding_dim = os.getenv("EMBEDDING_DIM")
+    embedding_model = MyEmbeddingModel()
+    index = faiss.IndexFlatL2(int(embedding_dim))
+
+    vector_store = FAISS(
+        embedding_function=embedding_model,
+        index=index,
+        docstore=InMemoryDocstore(),
+        index_to_docstore_id={},
+    )
+
+    retriever = vector_store.as_retriever(search_kwargs={"k": 3})
+
+    combine_docs_chain = create_stuff_documents_chain(
+        ChatCohere(), prompt
+    )
+
+    retrieval_chain = create_retrieval_chain(
+        retriever, combine_docs_chain
+    )
 
     history_chain = RunnableWithMessageHistory(
-        llm,
+        retrieval_chain,
         get_session_history,
         history_messages_key="chat_history",
-        input_messages_key="input")
-    lc = LangchainRAGProcessor(transport, history_chain)
+        input_messages_key="input"
+    )
+
+    lc = LangchainRAGProcessor(transport, history_chain, vector_store)
 
     tma_in = LLMUserResponseAggregator()
     tma_out = LLMAssistantResponseAggregator()
@@ -66,38 +92,11 @@ async def main(room_url: str):
         "content": "Hello! I'm your helpful AI assistant. How can I assist you today?"
     })
 
-    from pipecat.processors.frame_processor import FrameProcessor
-    from pipecat.frames.frames import Frame
-
-    class URLProcessor(FrameProcessor):
-        def __init__(
-                self,
-                *,
-                name: Optional[str] = None,
-                metrics: Optional[FrameProcessorMetrics] = None,
-                **kwargs,
-        ):
-            super().__init__(name=name, metrics=metrics, **kwargs)
-        # async def process_frame(self, frame: Frame, direction: FrameDirection) -> Frame:
-        #     # await super().process_frame(frame, direction)
-        #     # query = frame.messages[-1].parts[0].text  # Extract user query
-        #     # import re
-        #     # # Check if query contains a URL
-        #     # url_match = re.search(r'https?://\S+', query)
-        #     # if url_match:
-        #     #     url = url_match.group(0)
-        #     #     print(f"🔍 Found URL: {url}. Crawling...")
-        #     #
-        #     # return frame
-        #     await super().process_frame(frame, direction)
-            # pass
-
     pipeline = Pipeline([
         transport.input(),
-        # tma_in,
-        # URLProcessor(),
+        tma_in,
         lc,
-        # tma_out
+        tma_out
     ])
 
     task = PipelineTask(
@@ -111,7 +110,7 @@ async def main(room_url: str):
 
     @transport.event_handler("on_participant_joined")
     async def on_participant_joined(transport, participant):
-        lc.set_participant_id("123")
+        lc.set_participant_id(participant["id"])
         system_message = tma_in.messages[-1]
         await transport.send_prebuilt_chat_message(system_message["content"], "Chatbot")
 
