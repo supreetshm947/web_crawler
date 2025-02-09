@@ -15,6 +15,11 @@ An AI assistant that dynamically learns from **web pages** using **retrieval-aug
 - **Python** 🐍 → The foundation of our AI chatbot  
 
 ---
+## Workflow
+
+<img src="workflow.png" alt="grid"><br>
+
+---
 
 ## 📥 Setup
 
