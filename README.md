@@ -17,7 +17,6 @@ An AI assistant that dynamically learns from **web pages** using **retrieval-aug
 ---
 ## Architecture
 
-<img src="workflow.png" alt="grid"><br>
 
 ---
 
