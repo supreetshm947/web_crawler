@@ -1,4 +1,4 @@
-# 📚 Dynamic RAG Chatbot with Web Crawling
+# Dynamic RAG Chatbot with Web Crawling
 
 An AI assistant that dynamically learns from **web pages** using **retrieval-augmented generation (RAG)**.  
 
