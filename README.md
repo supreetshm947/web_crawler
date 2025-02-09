@@ -25,7 +25,13 @@ Add config in .env (.env_example for reference)
 ```bash
 poetry install
 ```
-### 3️⃣ Run the rag_chatbot_server.py
+
+### 3️⃣ Start the Embedding Server
+```
+docker compose up
+```
+
+### 4️⃣ Run the rag_chatbot_server.py
 ```bash
 py rag_chatbot_server.py
 ```
