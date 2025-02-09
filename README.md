@@ -46,7 +46,7 @@ py rag_chatbot_server.py
 ## Pipeline
 
 - ```DailyTransport``` initializes the Daily Chat room (```transport```).
-- Pipecat binds together the agentic Flow as pipeline
+- Pipecat binds together the agentic Flow as a Pipecat pipeline.
 ```
  pipeline = Pipeline([
         transport.input(),
@@ -55,7 +55,7 @@ py rag_chatbot_server.py
         tma_out
     ])
 ```
-- ```tma_in``` mantains User context and ```tma_out``` mantains LLM Response/Assistant context.
-- ```lc``` encapsulates a Langchain Retrieval Chain as an object of ```LLMUserResponseAggregator``` customized as ```LangchainRAGProcessor``` to implement fuzzy logic matching for URL and initiating web crawling.
-- Pipeline gets initiates with ```on_chat_message``` listener on ```transport``` and initiates the Pipecat pipeline.
+- ```tma_in``` maintains the user context, while ```tma_out``` stores the LLM's responses or assistant context.
+- ```lc``` encapsulates a LangChain Retrieval Chain within the ```LLMUserResponseAggregator``` customized as ```LangchainRAGProcessor```, to implement fuzzy logic matching for URLs and trigger web crawling.
+- The pipeline is initiated via the ```on_chat_message``` listener on ```transport```, which starts the Pipecat pipeline.
 
