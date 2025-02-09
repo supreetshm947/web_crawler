@@ -21,6 +21,24 @@ An AI assistant that dynamically learns from **web pages** using **retrieval-aug
 
 ---
 
+## Pipeline
+
+- ```DailyTransport``` initializes the Daily Chat room (```transport```).
+- Pipecat binds together the agentic Flow as a Pipecat pipeline.
+```
+ pipeline = Pipeline([
+        transport.input(),
+        tma_in,
+        lc,
+        tma_out
+    ])
+```
+- ```tma_in``` maintains the user context, while ```tma_out``` stores the LLM's responses or assistant context.
+- ```lc``` encapsulates a LangChain Retrieval Chain within the ```LLMUserResponseAggregator``` customized as ```LangchainRAGProcessor```, to implement fuzzy logic matching for URLs and trigger web crawling.
+- The pipeline is initiated via the ```on_chat_message``` listener on ```transport```, which starts the Pipecat pipeline.
+
+---
+
 ## 📥 Setup
 
 ### 1️⃣ Set up environment variables
@@ -41,21 +59,4 @@ docker compose up
 py rag_chatbot_server.py
 ```
 
----
-
-## Pipeline
-
-- ```DailyTransport``` initializes the Daily Chat room (```transport```).
-- Pipecat binds together the agentic Flow as a Pipecat pipeline.
-```
- pipeline = Pipeline([
-        transport.input(),
-        tma_in,
-        lc,
-        tma_out
-    ])
-```
-- ```tma_in``` maintains the user context, while ```tma_out``` stores the LLM's responses or assistant context.
-- ```lc``` encapsulates a LangChain Retrieval Chain within the ```LLMUserResponseAggregator``` customized as ```LangchainRAGProcessor```, to implement fuzzy logic matching for URLs and trigger web crawling.
-- The pipeline is initiated via the ```on_chat_message``` listener on ```transport```, which starts the Pipecat pipeline.
 
