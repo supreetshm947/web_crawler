@@ -15,7 +15,7 @@ An AI assistant that dynamically learns from **web pages** using **retrieval-aug
 - **Python** 🐍 → The foundation of our AI chatbot  
 
 ---
-## Workflow
+## Architecture
 
 <img src="workflow.png" alt="grid"><br>
 
@@ -40,3 +40,22 @@ docker compose up
 ```bash
 py rag_chatbot_server.py
 ```
+
+---
+
+## Pipeline
+
+- ```DailyTransport``` initializes the Daily Chat room (```transport```).
+- Pipecat binds together the agentic Flow as pipeline
+```
+ pipeline = Pipeline([
+        transport.input(),
+        tma_in,
+        lc,
+        tma_out
+    ])
+```
+- ```tma_in``` mantains User context and ```tma_out``` mantains LLM Response/Assistant context.
+- ```lc``` encapsulates a Langchain Retrieval Chain as an object of ```LLMUserResponseAggregator``` customized as ```LangchainRAGProcessor``` to implement fuzzy logic matching for URL and initiating web crawling.
+- Pipeline gets initiates with ```on_chat_message``` listener on ```transport``` and initiates the Pipecat pipeline.
+
